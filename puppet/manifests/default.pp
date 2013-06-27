@@ -35,7 +35,7 @@ class nginx-setup {
 
   include nginx
 
-  file { "/etc/nginx/sites-available/php-fpm":
+  file { "/etc/nginx/sites-available/flatsy":
     owner  => root,
     group  => root,
     mode   => 664,
@@ -47,7 +47,7 @@ class nginx-setup {
   file { "/etc/nginx/sites-enabled/default":
     owner  => root,
     ensure => link,
-    target => "/etc/nginx/sites-available/php-fpm",
+    target => "/etc/nginx/sites-available/flatsy",
     require => Package["nginx"],
     notify => Service["nginx"],
   }
@@ -55,15 +55,10 @@ class nginx-setup {
 
 class development {
 
-  $devPackages = [ "curl", "git", "nodejs", "npm", "capistrano", "rubygems", "openjdk-7-jdk", "libaugeas-ruby" ]
+  $devPackages = [ "curl", "git", "npm", "capistrano", "rubygems", "libaugeas-ruby" ]
   package { $devPackages:
     ensure => "installed",
     require => Exec['apt-get update'],
-  }
-
-  exec { 'install less using npm':
-    command => 'npm install less -g',
-    require => Package["npm"],
   }
 
   exec { 'install capifony using RubyGems':
@@ -77,32 +72,13 @@ class development {
   }
 }
 
-class symfony-standard {
+class flatsy-standard {
 
-  exec { 'git clone symfony standard':
-    command => 'git clone https://github.com/symfony/symfony-standard.git /vagrant/www/symfony',
-    creates => "/vagrant/www/symfony"
+  exec { 'git clone flatsy standard':
+    command => 'git clone git@bitbucket.org:space1nvader/flatsea.git /vagrant/www/flatsy',
+    creates => "/vagrant/www/flatsy"
   }
 
-  exec { 'install composer for symfony when needed':
-    command => 'curl -s http://getcomposer.org/installer | php -- --install-dir=/vagrant/www/symfony',
-    onlyif  => "test -e /vagrant/www/symfony/composer.json",
-  }
-
-  exec { 'run composer for symfony when composer is used':
-    command => 'php composer.phar --verbose install',
-    cwd => "/vagrant/www/symfony",
-    onlyif  => "test -e /vagrant/www/symfony/composer.json",
-    timeout => 0,
-    tries   => 10,
-    require => Exec['install composer for symfony when needed'],
-  }
-
-  exec { 'run vendor installation from deps when composer is not used':
-    command => 'php bin/vendors update',
-    cwd => "/vagrant/www/symfony",
-    unless  => "test -e /vagrant/www/symfony/composer.json",
-  }
 }
 
 class devbox_php_fpm {
@@ -177,7 +153,6 @@ include php::fpm
 include devbox_php_fpm
 
 include nginx-setup
-include apache
 include mysql
 
 class {'mongodb':
@@ -186,6 +161,6 @@ class {'mongodb':
 
 include phpqatools
 include development
-include symfony-standard
+include flatsy-standard
 
 
